@@ -23,14 +23,14 @@ WHERE amount <1 AND amount !=0)))SELECT net_withdrawers FROM agent_withdrawers;
 
 --QUESTION 6. BUILD AN ATX VOLUME CITY SUMMARY TABLE
 CREATE VIEW atx_volume_city_summary AS SELECT COUNT(atx_id) AS volume,city
-FROM public.agent_transactions, public.agents
-WHERE agent_transactions.when_created BETWEEN '2018-11-23 23:59:59' AND '2018-12-30 23:59:59'
+FROM public.agent_transactions INNER JOIN public.agents ON agents.agent_id = agent_transactions.agent_id
+WHERE agent_transactions.when_created > now()-INTERVAL '7DAYS'
 GROUP BY city;
 
---QUESTION 7 THE TABLE IN QUESTIONS6 SEPERATED BY COUNTRY
-CREATE VIEW atx_volume_country_summary AS SELECT COUNT(atx_id) AS volume,city,country
-FROM public.agent_transactions, public.agents
-WHERE agent_transactions.when_created BETWEEN '2018-11-23 23:59:59' AND '2018-12-30 23:59:59'
+--QUESTION 7 THE TABLE IN QUESTIONS6 SEPARATED BY COUNTRY
+CREATE OR REPLACE VIEW atx_volume_city_summary AS SELECT COUNT(atx_id) AS volume,city,country
+FROM public.agent_transactions INNER JOIN  public.agents ON agents.agent_id = agent_transactions.agent_id
+WHERE agent_transactions.when_created > now()- INTERVAL '7 days'
 GROUP BY city,country;
 
 --QUESTION 8 
@@ -52,10 +52,11 @@ GROUP BY wallets.ledger_location, transfers.kind;
 
 
 --QUESTION 10
-SELECT source_wallet_id, send_amount_scalar FROM transfers
+SELECT source_wallet_id, sum(transfers.send_amount_scalar) AS
+total_sent FROM transfers
 WHERE send_amount_currency = 'CFA'
-AND (send_amount_scalar>1000000) 
-AND (transfers.when_created > (now() - INTERVAL '1 month'));
+AND (transfers.when_created>(now()-INTERVAL '10 month'))
+GROUP BY transfers.source_wallet_id HAVING sum(transfers.send_amount_scalar)>10000000;
 
 
 
